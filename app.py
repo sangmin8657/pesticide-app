@@ -5,10 +5,11 @@ st.set_page_config(page_title="농약 현장 가이드", page_icon="🌱", layou
 
 st.title("🌱 농약·작물보호제 현장 검색기")
 
-# CSV 데이터 불러오기
+# xlsx 데이터 불러오기
 @st.cache_data
 def load_data():
-    return pd.read_csv("pesticide_data.csv")
+    return pd.read_excel("pesticide_data.xlsx")
+
 
 try:
     df = load_data()
