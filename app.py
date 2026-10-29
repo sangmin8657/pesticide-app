@@ -1,165 +1,296 @@
-import streamlit as st
+import io
 import pandas as pd
+import requests
+import streamlit as st
 
-# 1. 페이지 레이아웃 및 타이틀 설정
+# 1. 페이지 레이아웃 및 타이틀 설정 (모바일 가독성 최적화)
 st.set_page_config(
-    page_title="농약 안전사용 및 적용병해충 검색 시스템",
+    page_title="농약 안전사용 및 희석배수 계산기",
     page_icon="🌾",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed",  # 모바일에서 화면을 넓게 쓰도록 사이드바 기본 접음
 )
 
-# 2. GitHub Release 데이터 로딩 함수 (캐싱 적용)
-# GitHub Release의 Direct Download URL을 입력합니다.
-DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
+# GitHub Release CSV Direct Download URL
+DATA_URL = "https://github.com/YOUR_GITHUB_ID/YOUR_REPO_NAME/releases/download/v1.0.0/pesticide_data.csv"
 
-@st.cache_data(ttl=86400, show_spinner="대용량 농약 데이터를 로딩하는 중입니다...")
+
+# 2. 데이터 로딩 함수 (User-Agent 헤더 추가 및 캐싱)
+@st.cache_data(
+    ttl=86400, show_spinner="대용량 농약 데이터를 로딩하는 중입니다..."
+)
 def load_pesticide_data(url: str) -> pd.DataFrame:
-    try:
-        # 모든 컬럼을 문자열 타입으로 일결 로딩하여 메모리 효율성 및 검색 정확도 확보
-        df = pd.read_csv(url, dtype=str)
-        df = df.fillna("-")
-        return df
-    except Exception as e:
-        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
-        return pd.DataFrame()
+  try:
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        )
+    }
+    response = requests.get(url, headers=headers, timeout=30)
+    response.raise_for_status()
+    df = pd.read_csv(io.StringIO(response.text), dtype=str)
+    df = df.fillna("-")
+    return df
+  except Exception as e:
+    st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+    return pd.DataFrame()
 
-# 데이터 로드
+
 df_raw = load_pesticide_data(DATA_URL)
 
-# 3. 사이드바 - 검색 및 필터 옵션
+if df_raw.empty:
+  st.warning(
+      "데이터를 불러오지 못했습니다. GITHUB Release URL 및 저장소 공개 상태를"
+      " 확인해주세요."
+  )
+  st.stop()
+
+# 3. 사이드바 - st.form 적용 (검색 버튼을 눌러야 실행되어 모바일 렉 방지)
 st.sidebar.title("🔍 농약 검색 필터")
 
-if df_raw.empty:
-    st.warning("데이터를 불러오지 못했습니다. GITHUB_RELEASE_URL을 확인해주세요.")
-    st.stop()
+with st.sidebar.form(key="search_form"):
+  # (1) 용도 선택
+  use_categories = ["전체"] + sorted(
+      [x for x in df_raw["용도"].unique() if x != "-"]
+  )
+  selected_use = st.selectbox("1. 용도 선택", use_categories)
 
-# (1) GITHUB Release URL 직접 수정 기능 (테스트용)
-with st.sidebar.expander("⚙️ 데이터 출처 설정"):
-    custom_url = st.text_input("GitHub Release CSV URL", value=DATA_URL)
-    if custom_url != DATA_URL:
-        DATA_URL = custom_url
-        st.cache_data.clear()
-        st.rerun()
+  # (2) 작물명 선택
+  all_crops = sorted([x for x in df_raw["작물명"].unique() if x != "-"])
+  selected_crop = st.selectbox(
+      "2. 작물명 선택", ["전체"] + all_crops, help="목록에서 선택하거나 직접 입력"
+  )
 
-# (2) 용도 필터
-use_categories = ["전체"] + sorted([x for x in df_raw["용도"].unique() if x != "-"])
-selected_use = st.sidebar.selectbox("1. 용도 선택", use_categories)
+  # (3) 적용병해충 검색/선택
+  all_pests = sorted([x for x in df_raw["적용병해충"].unique() if x != "-"])
+  selected_pest = st.selectbox("3. 적용 병해충 선택", ["전체"] + all_pests)
 
-# 용도 1차 필터링
+  # (4) 상표명 / 품목명 / 일반명 통합 검색
+  search_keyword = st.text_input(
+      "4. 상표명 / 품목명 / 성분명 키워드", value=""
+  )
+
+  # (5) 작용기작 선택
+  mechanism_list = ["전체"] + sorted(
+      [x for x in df_raw["작용기작"].unique() if x != "-"]
+  )
+  selected_mechanism = st.selectbox("5. 작용기작 선택", mechanism_list)
+
+  # 최종 검색 버튼 (클릭 시에만 쿼리 실행)
+  submit_search = st.form_submit_button(
+      "🔍 검색 실행", use_container_width=True
+  )
+
+# 4. 데이터 필터링 로직
 df_filtered = df_raw.copy()
-if selected_use != "전체":
-    df_filtered = df_filtered[df_filtered["용도"] == selected_use]
 
-# (3) 작물명 검색 및 선택
-all_crops = sorted([x for x in df_filtered["작물명"].unique() if x != "-"])
-selected_crop = st.sidebar.selectbox("2. 작물명 선택 (선택 또는 검색)", ["전체"] + all_crops)
+if selected_use != "전체":
+  df_filtered = df_filtered[df_filtered["용도"] == selected_use]
 
 if selected_crop != "전체":
-    df_filtered = df_filtered[df_filtered["작물명"] == selected_crop]
-
-# (4) 적용병해충 선택
-all_pests = sorted([x for x in df_filtered["적용병해충"].unique() if x != "-"])
-selected_pest = st.sidebar.selectbox("3. 적용 병해충 선택", ["전체"] + all_pests)
+  df_filtered = df_filtered[df_filtered["작물명"] == selected_crop]
 
 if selected_pest != "전체":
-    df_filtered = df_filtered[df_filtered["적용병해충"] == selected_pest]
-
-# (5) 상표명 / 품목명 / 일반명 키워드 검색
-search_keyword = st.sidebar.text_input("4. 상표명 / 품목명 / 일반명 검색", value="")
+  df_filtered = df_filtered[df_filtered["적용병해충"] == selected_pest]
 
 if search_keyword.strip():
-    kw = search_keyword.strip()
-    df_filtered = df_filtered[
-        df_filtered["상표명"].str.contains(kw, case=False, na=False) |
-        df_filtered["품목명"].str.contains(kw, case=False, na=False) |
-        df_filtered["일반명"].str.contains(kw, case=False, na=False)
-    ]
-
-# (6) 작용기작 필터
-mechanism_list = ["전체"] + sorted([x for x in df_filtered["작용기작"].unique() if x != "-"])
-selected_mechanism = st.sidebar.selectbox("5. 작용기작 선택", mechanism_list)
+  kw = search_keyword.strip()
+  df_filtered = df_filtered[
+      df_filtered["상표명"].str.contains(kw, case=False, na=False)
+      | df_filtered["품목명"].str.contains(kw, case=False, na=False)
+      | df_filtered["일반명"].str.contains(kw, case=False, na=False)
+  ]
 
 if selected_mechanism != "전체":
-    df_filtered = df_filtered[df_filtered["작용기작"] == selected_mechanism]
+  df_filtered = df_filtered[df_filtered["작용기작"] == selected_mechanism]
 
 
-# 4. 메인 화면 구성
-st.title("🌾 농약 안전사용 및 적용병해충 검색 시스템")
-st.caption("국립환경과학원 및 농약 등록 데이터를 기반으로 한 안전사용 기준 통합 조회 서비스")
+# 5. 메인 화면 - 탭(Tab) 구성을 통한 기능 분리 (모바일 가독성 증대)
+st.title("🌾 농약 안전사용 및 희석배수 계산기")
 
-# 요약 지표 (Metrics)
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("검색된 등록건수", f"{len(df_filtered):,} 건")
-col2.metric("대상 작물 수", f"{df_filtered['작물명'].nunique():,} 개")
-col3.metric("대상 병해충 수", f"{df_filtered['적용병해충'].nunique():,} 개")
-col4.metric("검색된 상표 수", f"{df_filtered['상표명'].nunique():,} 개")
+tab1, tab2 = st.tabs(["🔍 농약 검색 및 상세지침", "🧮 희석배수 계산기"])
 
-st.markdown("---")
+# ==========================================
+# TAB 1: 농약 검색 및 상세 지침
+# ==========================================
+with tab1:
+  # 요약 지표 (Metrics)
+  col1, col2, col3, col4 = st.columns(4)
+  col1.metric("검색 결과", f"{len(df_filtered):,} 건")
+  col2.metric("대상 작물", f"{df_filtered['작물명'].nunique():,} 개")
+  col3.metric("대상 병해충", f"{df_filtered['적용병해충'].nunique():,} 개")
+  col4.metric("검색 상표 수", f"{df_filtered['상표명'].nunique():,} 개")
 
-# 검색 결과 데이터프레임 출력
-st.subheader("📋 검색 결과 목록")
+  st.markdown("---")
 
-# 주요 표시 컬럼 지정
-default_columns = [
-    "작물명", "적용병해충", "상표명", "품목명", "용도", "작용기작", 
-    "희석배수", "사용량", "사용적기", "안전사용시기", "안전사용횟수", "회사명"
-]
+  # 검색 결과 표
+  st.subheader("📋 검색 결과 목록")
 
-st.dataframe(
-    df_filtered[default_columns],
-    use_container_width=True,
-    hide_index=True,
-    height=400
-)
+  default_columns = [
+      "작물명",
+      "적용병해충",
+      "상표명",
+      "품목명",
+      "용도",
+      "작용기작",
+      "희석배수",
+      "사용량",
+      "안전사용시기",
+      "안전사용횟수",
+      "회사명",
+  ]
 
-# 데이터 다운로드 버튼
-csv_data = df_filtered.to_csv(index=False, encoding="utf-8-sig")
-st.download_button(
-    label="📥 검색 결과 CSV 다운로드",
-    data=csv_data,
-    file_name="농약_검색결과.csv",
-    mime="text/csv"
-)
+  st.dataframe(
+      df_filtered[default_columns],
+      use_container_width=True,
+      hide_index=True,
+      height=350,
+  )
 
-st.markdown("---")
+  # CSV 다운로드 버튼
+  csv_data = df_filtered.to_csv(index=False, encoding="utf-8-sig")
+  st.download_button(
+      label="📥 현재 검색결과 CSV 다운로드",
+      data=csv_data,
+      file_name="농약_검색결과.csv",
+      mime="text/csv",
+  )
 
-# 5. 상세정보 확인 카드 (선택 품목 상세 보기)
-st.subheader("🔍 품목별 상세 안전사용지침 확인")
+  st.markdown("---")
 
-if not df_filtered.empty:
-    selected_brand = st.selectbox(
-        "상세 정보를 확인할 상표명을 선택하세요:",
-        options=df_filtered["상표명"].unique()
+  # 선택한 검색 결과에 대한 상세 안전사용지침 카드
+  st.subheader("🔎 검색된 농약 상세 안전사용지침")
+
+  if not df_filtered.empty:
+    # 검색된 항목들만 모아서 [상표명] 작물 - 병해충 (회사명) 형태의 식별 라벨 생성
+    df_filtered["select_label"] = df_filtered.apply(
+        lambda r: f"[{r['상표명']}] {r['작물명']} - {r['적용병해충']} ({r['회사명']})",
+        axis=1,
     )
-    
-    detail_df = df_filtered[df_filtered["상표명"] == selected_brand]
-    
-    for idx, row in detail_df.iterrows():
-        with st.expander(f"📌 [{row['작물명']}] {row['상표명']} ({row['품목명']}) - {row['적용병해충']}", expanded=True):
-            d_col1, d_col2, d_col3 = st.columns(3)
-            
-            with d_col1:
-                st.write(f"**등록번호:** {row['등록번호']}")
-                st.write(f"**구분 / 용도:** {row['구분']} / {row['용도']}")
-                st.write(f"**품목명:** {row['품목명']}")
-                st.write(f"**일반명(성분):** {row['일반명']} ({row['주성분함량']})")
-                st.write(f"**회사명:** {row['회사명']}")
-                
-            with d_col2:
-                st.write(f"**작물명:** {row['작물명']}")
-                st.write(f"**적용병해충:** {row['적용병해충']}")
-                st.write(f"**작용기작:** {row['작용기작']}")
-                st.write(f"**제형:** {row['제형']}")
-                st.write(f"**등록일:** {row['등록일']}")
 
-            with d_col3:
-                st.write(f"**희석배수:** {row['희석배수']}")
-                st.write(f"**사용량:** {row['사용량']}")
-                st.write(f"**사용적기:** {row['사용적기']}")
-                st.write(f"**안전사용시기:** {row['안전사용시기']}")
-                st.write(f"**안전사용횟수:** {row['안전사용횟수']}")
-                st.write(f"**독성 (인축/어독성):** {row['인축독성']} / {row['어독성']}")
-                st.write(f"**사용방법:** {row['사용방법']}")
-else:
-    st.info("검색 조건에 해당하는 데이터가 없습니다.")
+    selected_label = st.selectbox(
+        "상세 지침을 확인할 농약을 선택하세요 (현재 검색 결과 목록에서 선택):",
+        options=df_filtered["select_label"].tolist(),
+    )
+
+    # 선택한 식별 라벨에 해당하는 데이터 1건 추출
+    selected_row = df_filtered[
+        df_filtered["select_label"] == selected_label
+    ].iloc[0]
+
+    # 상세 정보 카드 표시
+    with st.container(border=True):
+      st.markdown(
+          f"### 📌 [{selected_row['작물명']}] {selected_row['상표명']}"
+          f" ({selected_row['품목명']})"
+      )
+
+      d_col1, d_col2, d_col3 = st.columns(3)
+
+      with d_col1:
+        st.write(f"**등록번호:** {selected_row['등록번호']}")
+        st.write(f"**구분 / 용도:** {selected_row['구분']} / {selected_row['용도']}")
+        st.write(f"**품목명:** {selected_row['품목명']}")
+        st.write(
+            f"**성분(일반명):** {selected_row['일반명']}"
+            f" ({selected_row['주성분함량']})"
+        )
+        st.write(f"**제조사:** {selected_row['회사명']}")
+
+      with d_col2:
+        st.write(f"**적용 작물:** {selected_row['작물명']}")
+        st.write(f"**적용 병해충:** {selected_row['적용병해충']}")
+        st.write(f"**작용기작:** {selected_row['작용기작']}")
+        st.write(f"**제형:** {selected_row['제형']}")
+        st.write(f"**등록일자:** {selected_row['등록일']}")
+
+      with d_col3:
+        st.write(f"**희석배수:** :blue[**{selected_row['희석배수']}**]")
+        st.write(f"**사용량:** {selected_row['사용량']}")
+        st.write(f"**사용적기:** {selected_row['사용적기']}")
+        st.write(f"**안전사용시기:** :red[**{selected_row['안전사용시기']}**]")
+        st.write(f"**안전사용횟수:** :red[**{selected_row['안전사용횟수']}**]")
+        st.write(
+            f"**독성:** 인축({selected_row['인축독성']}) /"
+            f" 어독성({selected_row['어독성']})"
+        )
+
+      st.info(f"💡 **사용방법:** {selected_row['사용방법']}")
+
+  else:
+    st.info("검색 조건에 일치하는 농약이 없습니다.")
+
+
+# ==========================================
+# TAB 2: 희석배수 및 사용량 계산기
+# ==========================================
+with tab2:
+  st.subheader("🧮 농약 희석배수 계산기")
+  st.caption(
+      "살포할 물의 양과 희석배수를 입력하여 필요한 약제(농약)의 정량을"
+      " 계산합니다."
+  )
+
+  calc_col1, calc_col2 = st.columns(2)
+
+  with calc_col1:
+    unit_type = st.radio(
+        "물의 양 입력 단위 선택",
+        ["리터 (L)", "말 (1말 = 20L)"],
+        horizontal=True,
+    )
+
+    if unit_type == "리터 (L)":
+      water_input = st.number_input(
+          "살포할 물의 양 (L)", min_value=0.1, value=20.0, step=1.0
+      )
+      water_ml = water_input * 1000.0
+    else:
+      mal_input = st.number_input(
+          "살포할 물의 양 (말)", min_value=0.1, value=1.0, step=0.5
+      )
+      water_ml = mal_input * 20.0 * 1000.0
+
+  with calc_col2:
+    dilution_ratio = st.number_input(
+        "희석 배수 (예: 500배, 1000배)",
+        min_value=1,
+        value=1000,
+        step=100,
+        help="농약 포장지에 기재된 희석배수를 입력하세요.",
+    )
+
+    cap_size = st.number_input(
+        "농약 뚜껑(캡) 용량 (mL) [선택사항]",
+        min_value=1.0,
+        value=20.0,
+        step=5.0,
+        help="뚜껑 기준 정량을 측정할 때 사용합니다. (보통 20mL)",
+    )
+
+  # 계산 결과
+  if dilution_ratio > 0:
+    required_pesticide_ml = water_ml / dilution_ratio
+    cap_count = required_pesticide_ml / cap_size
+
+    st.success("### 💡 계산 결과")
+
+    res_c1, res_c2, res_c3 = st.columns(3)
+    res_c1.metric(
+        "필요한 물의 총량",
+        f"{water_ml/1000:,.1f} L",
+        f"{(water_ml/1000)/20:,.1f} 말",
+    )
+    res_c2.metric("필요 약제(농약) 용량", f"{required_pesticide_ml:,.1f} mL (또는 g)")
+    res_c3.metric(
+        "뚜껑(캡) 기준 약제량",
+        f"약 {cap_count:,.1f} 뚜껑",
+        f"1뚜껑당 {cap_size}mL 기준",
+    )
+
+    st.markdown("""
+        > 📌 **참고 및 주의사항**
+        > * 액상 수화제, 유제 등 액체 농약의 경우 **1mL ≒ 1g**으로 계산됩니다.
+        > * 수화제(가루) 농약의 경우 저울을 이용해 g 단위를 측정하는 것이 가장 정확합니다.
+        > * 약제를 먼저 물 소량에 완전히 녹인 후 잔여 물을 채워 혼합하시면 균일하게 희석됩니다.
+        """)
