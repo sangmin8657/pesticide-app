@@ -22,7 +22,7 @@ def get_image_base64(image_path: str) -> str:
     return ""
 
 
-# 국립환경과학원 로고 경로 지정
+# assets/nier_logo.png 경로 지정 및 Base64 인코딩
 NIER_LOGO_PATH = os.path.join("assets", "nier_logo.png")
 nier_logo_b64 = get_image_base64(NIER_LOGO_PATH)
 
@@ -111,7 +111,7 @@ st.markdown(
         flex-wrap: wrap;
     }
     .footer-nier-logo {
-        height: 28px;
+        height: 30px;
         object-fit: contain;
         vertical-align: middle;
     }
@@ -130,7 +130,7 @@ st.markdown(
 )
 
 # GitHub Release CSV Direct Download URL
-DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
+DATA_URL = "https://github.com/YOUR_GITHUB_ID/YOUR_REPO_NAME/releases/download/v1.0.0/pesticide_data.csv"
 
 
 # 2. 데이터 로딩 함수 (User-Agent 헤더 및 캐싱)
@@ -470,9 +470,10 @@ with tab2:
 # ==========================================
 # 4. 화면 최하단 출처 및 기관 표시 푸터 (Footer)
 # ==========================================
-nier_footer_badge = (
+# assets/nier_logo.png 존재 여부에 따라 로고 이미지 태그 생성
+nier_footer_logo_html = (
     f'<img src="data:image/png;base64,{nier_logo_b64}" class="footer-nier-logo"'
-    ' alt="국립환경과학원">'
+    ' alt="국립환경과학원 로고">'
     if nier_logo_b64
     else '<span class="agency-badge">국립환경과학원</span>'
 )
@@ -487,12 +488,12 @@ st.markdown(
               <path d="M50,2 A48,48 0 0,1 50,98 A24,24 0 0,1 50,50 A24,24 0 0,0 50,2 Z" fill="#cd2e3a"/>
               <path d="M50,98 A48,48 0 0,1 50,2 A24,24 0 0,1 50,50 A24,24 0 0,0 50,98 Z" fill="#0047a0"/>
             </svg>
-            {nier_footer_badge}
+            {nier_footer_logo_html}
             <span class="agency-badge">농촌진흥청</span>
             <span class="agency-badge">농약안전정보센터</span>
         </div>
         <div>
-            <strong>?? 데이터 출처 및 안내</strong><br>
+            <strong>📢 데이터 출처 및 안내</strong><br>
             본 어플리케이션은 <strong>국립환경과학원</strong>에서 구축하고 <strong>농촌진흥청</strong>에서 운영하는 <strong>농약안전정보센터</strong>에서 제공하는 공공 농약 안전사용 및 표준 등록 데이터를 기반으로 제작되었습니다.<br>
             <span style="color: #868e96;">※ 본 앱의 검색 결과 및 계산 결과는 토양·지하수 환경 보호 및 골프장 농약 안전사용 관리를 돕기 위한 참고 정보이며, 실제 사용 시 제품의 용기 표기 지침을 반드시 확인하시기 바랍니다.</span>
         </div>
