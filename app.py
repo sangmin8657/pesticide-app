@@ -5,6 +5,25 @@ import pandas as pd
 import requests
 import streamlit as st
 
+# ==========================================
+# 0. 경로 설정 및 로고 파일 로딩 (assets/nier_logo.png)
+# ==========================================
+# assets 폴더 내 로고 이미지 파일 상대 경로 지정
+NIER_LOGO_PATH = os.path.join("assets", "nier_logo.png")
+
+
+def get_image_base64(image_path: str) -> str:
+    """이미지 파일을 HTML에 직접 삽입하기 위해 Base64 문자열로 변환하는 함수"""
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
+
+
+# 로고 이미지 Base64 인코딩 데이터 생성
+nier_logo_b64 = get_image_base64(NIER_LOGO_PATH)
+
+
 # 1. 페이지 레이아웃 및 타이틀 설정
 st.set_page_config(
     page_title="골프장 농약 안전사용 도우미",
@@ -12,19 +31,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-
-
-# 이미지 파일을 Base64로 변환하는 함수 (HTML 내 로고 삽입용)
-def get_image_base64(image_path: str) -> str:
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    return ""
-
-
-# assets/nier_logo.png 경로 지정 및 Base64 인코딩
-NIER_LOGO_PATH = os.path.join("assets", "nier_logo.png")
-nier_logo_b64 = get_image_base64(NIER_LOGO_PATH)
 
 # 모바일 대응 CSS & 하단 출처(Footer) 스타일링
 st.markdown(
@@ -111,7 +117,7 @@ st.markdown(
         flex-wrap: wrap;
     }
     .footer-nier-logo {
-        height: 30px;
+        height: 32px;
         object-fit: contain;
         vertical-align: middle;
     }
@@ -470,7 +476,7 @@ with tab2:
 # ==========================================
 # 4. 화면 최하단 출처 및 기관 표시 푸터 (Footer)
 # ==========================================
-# assets/nier_logo.png 존재 여부에 따라 로고 이미지 태그 생성
+# 푸터 내 로고 태그 생성 (assets/nier_logo.png 사용)
 nier_footer_logo_html = (
     f'<img src="data:image/png;base64,{nier_logo_b64}" class="footer-nier-logo"'
     ' alt="국립환경과학원 로고">'
@@ -482,12 +488,6 @@ st.markdown(
     f"""
     <div class="footer-container">
         <div class="footer-logos">
-            <!-- 대한민국 정부상징 태극문양 (SVG) -->
-            <svg width="34" height="34" viewBox="0 0 100 100" style="vertical-align: middle; margin-right: 6px;">
-              <circle cx="50" cy="50" r="48" fill="#ffffff"/>
-              <path d="M50,2 A48,48 0 0,1 50,98 A24,24 0 0,1 50,50 A24,24 0 0,0 50,2 Z" fill="#cd2e3a"/>
-              <path d="M50,98 A48,48 0 0,1 50,2 A24,24 0 0,1 50,50 A24,24 0 0,0 50,98 Z" fill="#0047a0"/>
-            </svg>
             {nier_footer_logo_html}
             <span class="agency-badge">농촌진흥청</span>
             <span class="agency-badge">농약안전정보센터</span>
