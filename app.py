@@ -75,17 +75,13 @@ st.markdown(
     .footer-logos {
         display: flex;
         align-items: center;
-        gap: 15px;
-        margin-bottom: 10px;
+        gap: 10px;
+        margin-bottom: 12px;
         flex-wrap: wrap;
-    }
-    .footer-logo-img {
-        height: 32px;
-        object-fit: contain;
     }
     .agency-badge {
         display: inline-block;
-        padding: 3px 8px;
+        padding: 4px 9px;
         background-color: #e9ecef;
         color: #212529;
         border-radius: 4px;
@@ -131,7 +127,7 @@ if df_raw.empty:
   )
   st.stop()
 
-# 메인 타이틀 (모바일 가로 한 줄 대응)
+# 메인 타이틀
 st.markdown(
     '<h1 class="main-title">⛳ 골프장 농약 안전사용 도우미</h1>',
     unsafe_allow_html=True,
@@ -343,61 +339,55 @@ with tab2:
   )
 
   with st.container(border=True):
-    calc_col1, calc_col2 = st.columns(2)
+    calc_col1, calc_col2, calc_col3 = st.columns(3)
 
+    # 1. 입력단위
     with calc_col1:
       unit_type = st.radio(
-          "물의 양 입력 단위 선택",
+          "1. 입력단위 선택",
           ["리터 (L)", "말 (1말 = 20L)"],
           horizontal=True,
       )
 
+    # 2. 살포할 물의 양
+    with calc_col2:
       if unit_type == "리터 (L)":
         water_input = st.number_input(
-            "살포할 물의 양 (L)", min_value=0.1, value=20.0, step=1.0
+            "2. 살포할 물의 양 (L)", min_value=0.1, value=20.0, step=1.0
         )
         water_ml = water_input * 1000.0
       else:
         mal_input = st.number_input(
-            "살포할 물의 양 (말)", min_value=0.1, value=1.0, step=0.5
+            "2. 살포할 물의 양 (말)", min_value=0.1, value=1.0, step=0.5
         )
         water_ml = mal_input * 20.0 * 1000.0
 
-    with calc_col2:
+    # 3. 희석배수
+    with calc_col3:
       dilution_ratio = st.number_input(
-          "희석배수 (예: 500, 1000)",
+          "3. 희석배수 (배)",
           min_value=1,
           value=1000,
           step=100,
-          help="농약 라벨에 기재된 희석배수 숫자를 입력하세요.",
-      )
-
-      cap_size = st.number_input(
-          "농약 뚜껑(캡) 용량 (mL) [선택]",
-          min_value=1.0,
-          value=20.0,
-          step=5.0,
-          help="뚜껑 개수로 계산할 때 사용합니다 (기본 20mL).",
+          help="농약 라벨에 기재된 희석배수 숫자를 입력하세요 (예: 500, 1000).",
       )
 
     # 자동 계산 결과 산출
     if dilution_ratio > 0:
       required_pesticide_ml = water_ml / dilution_ratio
-      cap_count = required_pesticide_ml / cap_size
 
       st.markdown("---")
       st.success("### 💡 자동 계산 결과")
 
-      res1, res2, res3 = st.columns(3)
-      res1.metric("필요한 물의 총량", f"{water_ml/1000:,.1f} L")
-      res2.metric(
-          "필요 농약 용량 (자동계산)",
-          f"{required_pesticide_ml:,.1f} mL (g)",
+      res1, res2 = st.columns(2)
+      res1.metric(
+          "필요한 물의 총량",
+          f"{water_ml/1000:,.1f} L",
+          f"{(water_ml/1000)/20:,.1f} 말",
       )
-      res3.metric(
-          "뚜껑 기준 측정량",
-          f"약 {cap_count:,.1f} 뚜껑",
-          f"1뚜껑={cap_size}mL 기준",
+      res2.metric(
+          "농약 용량 (자동계산)",
+          f"{required_pesticide_ml:,.1f} mL (또는 g)",
       )
 
       st.markdown("""
@@ -414,8 +404,12 @@ st.markdown(
     """
     <div class="footer-container">
         <div class="footer-logos">
-            <!-- 2026년 대한민국 정부상징 마크 -->
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Emblem_of_the_Government_of_the_Republic_of_Korea_%28Korean%29.svg/500px-Emblem_of_the_Government_of_the_Republic_of_Korea_%28Korean%29.svg.png" class="footer-logo-img" alt="대한민국 정부상징">
+            <!-- 대한민국 정부상징 태극문양 (SVG 벡터 그래픽 선명 렌더링) -->
+            <svg width="34" height="34" viewBox="0 0 100 100" style="vertical-align: middle; margin-right: 6px;">
+              <circle cx="50" cy="50" r="48" fill="#ffffff"/>
+              <path d="M50,2 A48,48 0 0,1 50,98 A24,24 0 0,1 50,50 A24,24 0 0,0 50,2 Z" fill="#cd2e3a"/>
+              <path d="M50,98 A48,48 0 0,1 50,2 A24,24 0 0,1 50,50 A24,24 0 0,0 50,98 Z" fill="#0047a0"/>
+            </svg>
             <span class="agency-badge">기후에너지환경부</span>
             <span class="agency-badge">국립환경과학원</span>
             <span class="agency-badge">농약안전정보센터</span>
