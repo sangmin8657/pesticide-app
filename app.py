@@ -470,14 +470,33 @@ with tab2:
 # ==========================================
 # 4. 화면 최하단 출처 및 기관 표시 푸터 (Footer)
 # ==========================================
-import os
-import streamlit as st
+nier_footer_badge = (
+    f'<img src="data:image/png;base64,{nier_logo_b64}" class="footer-nier-logo"'
+    ' alt="국립환경과학원">'
+    if nier_logo_b64
+    else '<span class="agency-badge">국립환경과학원</span>'
+)
 
-# OS 호환 상대 경로 설정
-logo_path = os.path.join("assets", "nier_logo.png")
-
-with col_logo:
-    if os.path.exists(logo_path):
-        st.image(logo_path, width=140)
-    else:
-        st.caption("국립환경과학원")
+st.markdown(
+    f"""
+    <div class="footer-container">
+        <div class="footer-logos">
+            <!-- 대한민국 정부상징 태극문양 (SVG) -->
+            <svg width="34" height="34" viewBox="0 0 100 100" style="vertical-align: middle; margin-right: 6px;">
+              <circle cx="50" cy="50" r="48" fill="#ffffff"/>
+              <path d="M50,2 A48,48 0 0,1 50,98 A24,24 0 0,1 50,50 A24,24 0 0,0 50,2 Z" fill="#cd2e3a"/>
+              <path d="M50,98 A48,48 0 0,1 50,2 A24,24 0 0,1 50,50 A24,24 0 0,0 50,98 Z" fill="#0047a0"/>
+            </svg>
+            {nier_footer_badge}
+            <span class="agency-badge">농촌진흥청</span>
+            <span class="agency-badge">농약안전정보센터</span>
+        </div>
+        <div>
+            <strong>?? 데이터 출처 및 안내</strong><br>
+            본 어플리케이션은 <strong>국립환경과학원</strong>에서 구축하고 <strong>농촌진흥청</strong>에서 운영하는 <strong>농약안전정보센터</strong>에서 제공하는 공공 농약 안전사용 및 표준 등록 데이터를 기반으로 제작되었습니다.<br>
+            <span style="color: #868e96;">※ 본 앱의 검색 결과 및 계산 결과는 토양·지하수 환경 보호 및 골프장 농약 안전사용 관리를 돕기 위한 참고 정보이며, 실제 사용 시 제품의 용기 표기 지침을 반드시 확인하시기 바랍니다.</span>
+        </div>
+    </div>
+""",
+    unsafe_allow_html=True,
+)
