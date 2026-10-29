@@ -8,10 +8,11 @@ import streamlit as st
 # ==========================================
 # 0. 경로 설정 및 로고 파일 로딩 (assets/nier_logo.png)
 # ==========================================
-# assets 폴더 내 로고 이미지 파일 상대 경로 지정
 NIER_LOGO_PATH = os.path.join("assets", "nier_logo.png")
 
 
+# 리소스(이미지 파일 읽기 및 Base64 변환) 캐싱 처리
+@st.cache_resource
 def get_image_base64(image_path: str) -> str:
     """이미지 파일을 HTML에 직접 삽입하기 위해 Base64 문자열로 변환하는 함수"""
     if os.path.exists(image_path):
@@ -139,10 +140,8 @@ st.markdown(
 DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
 
 
-# 2. 데이터 로딩 함수 (User-Agent 헤더 및 캐싱)
-@st.cache_data(
-    ttl=86400, show_spinner="대용량 농약 데이터를 로딩하는 중입니다..."
-)
+# 2. 데이터 로딩 및 필터 옵션 추출 캐싱 함수
+@st.cache_data(show_spinner="대용량 농약 데이터를 로딩하는 중입니다...")
 def load_pesticide_data(url: str) -> pd.DataFrame:
     try:
         headers = {
@@ -158,6 +157,14 @@ def load_pesticide_data(url: str) -> pd.DataFrame:
     except Exception as e:
         st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
         return pd.DataFrame()
+
+
+@st.cache_data
+def get_unique_options(df: pd.DataFrame, column_name: str) -> list:
+    """드롭다운 옵션 추출 연산 캐싱"""
+    if column_name in df.columns:
+        return sorted([x for x in df[column_name].unique() if x != "-"])
+    return []
 
 
 df_raw = load_pesticide_data(DATA_URL)
@@ -197,9 +204,7 @@ with tab1:
 
         # 1. 용도 선택
         with col_filter1:
-            use_categories = ["전체"] + sorted(
-                [x for x in df_raw["용도"].unique() if x != "-"]
-            )
+            use_categories = ["전체"] + get_unique_options(df_raw, "용도")
             selected_use = st.selectbox("1. 용도 선택", use_categories)
 
         # 1차 필터링 (용도)
@@ -209,9 +214,7 @@ with tab1:
 
         # 2. 작물 선택
         with col_filter2:
-            all_crops = sorted(
-                [x for x in df_step1["작물명"].unique() if x != "-"]
-            )
+            all_crops = get_unique_options(df_step1, "작물명")
             selected_crop = st.selectbox("2. 작물 선택", ["전체"] + all_crops)
 
         # 2차 필터링 (작물)
@@ -221,9 +224,7 @@ with tab1:
 
         # 3. 적용 병해충 선택
         with col_filter3:
-            all_pests = sorted(
-                [x for x in df_step2["적용병해충"].unique() if x != "-"]
-            )
+            all_pests = get_unique_options(df_step2, "적용병해충")
             selected_pest = st.selectbox(
                 "3. 적용 병해충 선택", ["전체"] + all_pests
             )
@@ -476,7 +477,6 @@ with tab2:
 # ==========================================
 # 4. 화면 최하단 출처 및 기관 표시 푸터 (Footer)
 # ==========================================
-# 푸터 내 로고 태그 생성 (assets/nier_logo.png 사용)
 nier_footer_logo_html = (
     f'<img src="data:image/png;base64,{nier_logo_b64}" class="footer-nier-logo"'
     ' alt="국립환경과학원 로고">'
