@@ -11,7 +11,7 @@ st.set_page_config(
 
 # 2. GitHub Release 데이터 로딩 함수 (캐싱 적용)
 # GitHub Release의 Direct Download URL을 입력합니다.
-DATA_URL = "https://github.com/YOUR_GITHUB_ID/YOUR_REPO_NAME/releases/download/v1.0.0/pesticide_data.csv"
+DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/v1.0.0/pesticide_data.csv"
 
 @st.cache_data(ttl=86400, show_spinner="대용량 농약 데이터를 로딩하는 중입니다...")
 def load_pesticide_data(url: str) -> pd.DataFrame:
