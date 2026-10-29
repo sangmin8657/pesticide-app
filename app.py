@@ -3,19 +3,34 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# 1. 페이지 레이아웃 및 타이틀 설정 (골프장 아이콘 적용)
+# 1. 페이지 레이아웃 및 타이틀 설정
 st.set_page_config(
-    page_title="골프장 농약 안전사용 헬프앱",
+    page_title="골프장 농약 안전사용 도우미",
     page_icon="⛳",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# 모바일 환경에서 4개 요약 지표가 가로 1줄로 유지되도록 하는 CSS
+# 모바일 대응 CSS (타이틀 한 줄 표시 + 요약지표 가로 1줄 유지)
 st.markdown(
     """
     <style>
-    /* 모바일 가로 1줄 요약지표 스타일 */
+    /* 1. 메인 타이틀 모바일 한 줄 반응형 스타일 */
+    .main-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1b4332;
+        white-space: nowrap;
+        margin-bottom: 0.8rem;
+    }
+    @media (max-width: 600px) {
+        .main-title {
+            font-size: 1.15rem !important;
+            letter-spacing: -0.8px;
+        }
+    }
+    
+    /* 2. 모바일 가로 1줄 요약지표 스타일 */
     .metric-container {
         display: flex;
         justify-content: space-between;
@@ -85,14 +100,17 @@ if df_raw.empty:
   )
   st.stop()
 
-# 메인 타이틀
-st.title("⛳ 골프장 농약 안전사용 헬프앱")
+# 메인 타이틀 (모바일 가로 한 줄 적용)
+st.markdown(
+    '<h1 class="main-title">⛳ 골프장 농약 안전사용 도우미</h1>',
+    unsafe_allow_html=True,
+)
 
-# 3. 메인 탭 구성
-tab1, tab2 = st.tabs(["🔍 농약 검색 및 상세지침", "🧮 희석배수 계산기"])
+# 3. 메인 탭 구성 ('농약 검색', '희석배수 계산기')
+tab1, tab2 = st.tabs(["🔍 농약 검색", "🧮 희석배수 계산기"])
 
 # ==========================================
-# TAB 1: 농약 검색 및 상세 지침
+# TAB 1: 농약 검색
 # ==========================================
 with tab1:
   # (1) 첫 화면 상단 검색 필터 카드
@@ -113,7 +131,7 @@ with tab1:
     if selected_use != "전체":
       df_step1 = df_step1[df_step1["용도"] == selected_use]
 
-    # 2. 작물 선택 ('작물명 선택'에서 '작물 선택'으로 수정)
+    # 2. 작물 선택
     with col_filter2:
       all_crops = sorted([x for x in df_step1["작물명"].unique() if x != "-"])
       selected_crop = st.selectbox("2. 작물 선택", ["전체"] + all_crops)
@@ -135,7 +153,7 @@ with tab1:
     if selected_pest != "전체":
       df_step3 = df_step3[df_step3["적용병해충"] == selected_pest]
 
-    # 4. 키워드 검색 (작용기작 필터 제외 반영)
+    # 4. 키워드 검색
     search_keyword = st.text_input(
         "4. 상표명 / 품목명 / 성분명 키워드 검색",
         value="",
@@ -284,7 +302,7 @@ with tab1:
     st.info("검색 조건에 일치하는 농약이 없습니다.")
 
 # ==========================================
-# TAB 2: 농약 희석배수 계산기
+# TAB 2: 희석배수 계산기
 # ==========================================
 with tab2:
   st.subheader("🧮 농약 희석배수 자동 계산기")
