@@ -67,7 +67,7 @@ st.markdown(
 )
 
 # GitHub Release CSV Direct Download URL
-DATA_URL = "https://github.com/YOUR_GITHUB_ID/YOUR_REPO_NAME/releases/download/v1.0.0/pesticide_data.csv"
+DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
 
 
 # 2. 데이터 로딩 함수 (User-Agent 헤더 및 캐싱)
