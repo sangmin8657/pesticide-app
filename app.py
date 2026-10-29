@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="농약 안전사용 및 희석배수 계산기",
     page_icon="🌾",
     layout="wide",
-    initial_sidebar_state="collapsed",  # 모바일에서 화면을 넓게 쓰도록 사이드바 기본 접음
+    initial_sidebar_state="expanded",
 )
 
 # GitHub Release CSV Direct Download URL
@@ -45,53 +45,52 @@ if df_raw.empty:
   )
   st.stop()
 
-# 3. 사이드바 - st.form 적용 (검색 버튼을 눌러야 실행되어 모바일 렉 방지)
+
+# 3. 사이드바 - 단계별 연동 검색 필터 (Cascading Dropdowns)
 st.sidebar.title("🔍 농약 검색 필터")
 
-with st.sidebar.form(key="search_form"):
-  # (1) 용도 선택
-  use_categories = ["전체"] + sorted(
-      [x for x in df_raw["용도"].unique() if x != "-"]
-  )
-  selected_use = st.selectbox("1. 용도 선택", use_categories)
+# (1) 용도 선택
+use_categories = ["전체"] + sorted(
+    [x for x in df_raw["용도"].unique() if x != "-"]
+)
+selected_use = st.sidebar.selectbox("1. 용도 선택", use_categories)
 
-  # (2) 작물명 선택
-  all_crops = sorted([x for x in df_raw["작물명"].unique() if x != "-"])
-  selected_crop = st.selectbox(
-      "2. 작물명 선택", ["전체"] + all_crops, help="목록에서 선택하거나 직접 입력"
-  )
-
-  # (3) 적용병해충 검색/선택
-  all_pests = sorted([x for x in df_raw["적용병해충"].unique() if x != "-"])
-  selected_pest = st.selectbox("3. 적용 병해충 선택", ["전체"] + all_pests)
-
-  # (4) 상표명 / 품목명 / 일반명 통합 검색
-  search_keyword = st.text_input(
-      "4. 상표명 / 품목명 / 성분명 키워드", value=""
-  )
-
-  # (5) 작용기작 선택
-  mechanism_list = ["전체"] + sorted(
-      [x for x in df_raw["작용기작"].unique() if x != "-"]
-  )
-  selected_mechanism = st.selectbox("5. 작용기작 선택", mechanism_list)
-
-  # 최종 검색 버튼 (클릭 시에만 쿼리 실행)
-  submit_search = st.form_submit_button(
-      "🔍 검색 실행", use_container_width=True
-  )
-
-# 4. 데이터 필터링 로직
-df_filtered = df_raw.copy()
-
+# 1차 필터링 (용도 기준)
+df_step1 = df_raw.copy()
 if selected_use != "전체":
-  df_filtered = df_filtered[df_filtered["용도"] == selected_use]
+  df_step1 = df_step1[df_step1["용도"] == selected_use]
 
+# (2) 작물명 선택 (선택한 용도에 속한 작물만 동적 노출)
+all_crops = sorted([x for x in df_step1["작물명"].unique() if x != "-"])
+selected_crop = st.sidebar.selectbox("2. 작물명 선택", ["전체"] + all_crops)
+
+# 2차 필터링 (작물명 기준)
+df_step2 = df_step1.copy()
 if selected_crop != "전체":
-  df_filtered = df_filtered[df_filtered["작물명"] == selected_crop]
+  df_step2 = df_step2[df_step2["작물명"] == selected_crop]
 
+# (3) 적용 병해충 선택 (★ 핵심: '잔디' 선택 시 잔디 관련 병해충만 동적 노출)
+all_pests = sorted([x for x in df_step2["적용병해충"].unique() if x != "-"])
+selected_pest = st.sidebar.selectbox("3. 적용 병해충 선택", ["전체"] + all_pests)
+
+# 3차 필터링 (적용 병해충 기준)
+df_step3 = df_step2.copy()
 if selected_pest != "전체":
-  df_filtered = df_filtered[df_filtered["적용병해충"] == selected_pest]
+  df_step3 = df_step3[df_step3["적용병해충"] == selected_pest]
+
+# (4) 상표명 / 품목명 / 성분명 키워드 검색
+search_keyword = st.sidebar.text_input(
+    "4. 상표명 / 품목명 / 성분명 키워드", value=""
+)
+
+# (5) 작용기작 선택 (선택한 조건에 해당하는 작용기작만 동적 노출)
+mechanism_list = ["전체"] + sorted(
+    [x for x in df_step3["작용기작"].unique() if x != "-"]
+)
+selected_mechanism = st.sidebar.selectbox("5. 작용기작 선택", mechanism_list)
+
+# 최종 필터링 적용
+df_filtered = df_step3.copy()
 
 if search_keyword.strip():
   kw = search_keyword.strip()
@@ -105,7 +104,7 @@ if selected_mechanism != "전체":
   df_filtered = df_filtered[df_filtered["작용기작"] == selected_mechanism]
 
 
-# 5. 메인 화면 - 탭(Tab) 구성을 통한 기능 분리 (모바일 가독성 증대)
+# 4. 메인 화면 - 탭(Tab) 구성
 st.title("🌾 농약 안전사용 및 희석배수 계산기")
 
 tab1, tab2 = st.tabs(["🔍 농약 검색 및 상세지침", "🧮 희석배수 계산기"])
@@ -140,17 +139,24 @@ with tab1:
       "회사명",
   ]
 
-  st.dataframe(
-      df_filtered[default_columns],
-      use_container_width=True,
-      hide_index=True,
-      height=350,
-  )
+  # 모바일 브라우저 렉 방지: 결과가 500건 초과일 경우 상위 500건만 출력
+  MAX_DISPLAY = 500
+  if len(df_filtered) > MAX_DISPLAY:
+    st.info(
+        f"💡 검색 결과가 총 **{len(df_filtered):,}건**으로 많아 상위"
+        f" **{MAX_DISPLAY}건**만 표에 표시합니다. 좌측 필터(작물명, 병해충 등)를"
+        " 상세히 선택하시면 정확한 결과를 확인하실 수 있습니다."
+    )
+    display_df = df_filtered[default_columns].head(MAX_DISPLAY)
+  else:
+    display_df = df_filtered[default_columns]
 
-  # CSV 다운로드 버튼
+  st.dataframe(display_df, use_container_width=True, hide_index=True, height=350)
+
+  # CSV 다운로드 (전체 필터링 결과)
   csv_data = df_filtered.to_csv(index=False, encoding="utf-8-sig")
   st.download_button(
-      label="📥 현재 검색결과 CSV 다운로드",
+      label="📥 전체 검색결과 CSV 다운로드",
       data=csv_data,
       file_name="농약_검색결과.csv",
       mime="text/csv",
@@ -162,20 +168,24 @@ with tab1:
   st.subheader("🔎 검색된 농약 상세 안전사용지침")
 
   if not df_filtered.empty:
-    # 검색된 항목들만 모아서 [상표명] 작물 - 병해충 (회사명) 형태의 식별 라벨 생성
-    df_filtered["select_label"] = df_filtered.apply(
+    # 현재 필터링된 결과 데이터 중에서만 셀렉트박스 옵션 생성
+    df_filtered_copy = df_filtered.copy()
+    df_filtered_copy["select_label"] = df_filtered_copy.apply(
         lambda r: f"[{r['상표명']}] {r['작물명']} - {r['적용병해충']} ({r['회사명']})",
         axis=1,
     )
 
+    # 중복 라벨 제거 후 옵션 리스트 생성
+    options_list = list(dict.fromkeys(df_filtered_copy["select_label"].tolist()))
+
     selected_label = st.selectbox(
-        "상세 지침을 확인할 농약을 선택하세요 (현재 검색 결과 목록에서 선택):",
-        options=df_filtered["select_label"].tolist(),
+        "상세 지침을 확인할 농약을 선택하세요 (현재 검색 결과 목록 내 품목):",
+        options=options_list,
     )
 
     # 선택한 식별 라벨에 해당하는 데이터 1건 추출
-    selected_row = df_filtered[
-        df_filtered["select_label"] == selected_label
+    selected_row = df_filtered_copy[
+        df_filtered_copy["select_label"] == selected_label
     ].iloc[0]
 
     # 상세 정보 카드 표시
