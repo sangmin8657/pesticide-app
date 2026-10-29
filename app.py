@@ -3,19 +3,59 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# 1. 페이지 레이아웃 및 타이틀 설정
+# 1. 페이지 레이아웃 및 타이틀 설정 (골프장 아이콘 적용)
 st.set_page_config(
-    page_title="농약 안전사용 및 희석배수 계산기",
-    page_icon="🌾",
+    page_title="골프장 농약 안전사용 헬프앱",
+    page_icon="⛳",
     layout="wide",
-    initial_sidebar_state="collapsed",  # 메인 화면에 집중하도록 사이드바 기본 접음
+    initial_sidebar_state="collapsed",
+)
+
+# 모바일 환경에서 4개 요약 지표가 가로 1줄로 유지되도록 하는 CSS
+st.markdown(
+    """
+    <style>
+    /* 모바일 가로 1줄 요약지표 스타일 */
+    .metric-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #f8f9fa;
+        padding: 10px 6px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 15px;
+    }
+    .metric-box {
+        flex: 1;
+        text-align: center;
+        padding: 2px;
+    }
+    .metric-box:not(:last-child) {
+        border-right: 1px solid #dee2e6;
+    }
+    .metric-label {
+        font-size: 11px;
+        color: #6c757d;
+        margin-bottom: 3px;
+        white-space: nowrap;
+    }
+    .metric-value {
+        font-size: 14px;
+        font-weight: bold;
+        color: #1b4332;
+        white-space: nowrap;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
 )
 
 # GitHub Release CSV Direct Download URL
 DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
 
 
-# 2. 데이터 로딩 함수 (User-Agent 헤더 추가 및 캐싱)
+# 2. 데이터 로딩 함수 (User-Agent 헤더 및 캐싱)
 @st.cache_data(
     ttl=86400, show_spinner="대용량 농약 데이터를 로딩하는 중입니다..."
 )
@@ -46,7 +86,7 @@ if df_raw.empty:
   st.stop()
 
 # 메인 타이틀
-st.title("🌾 농약 안전사용 및 희석배수 계산기")
+st.title("⛳ 골프장 농약 안전사용 헬프앱")
 
 # 3. 메인 탭 구성
 tab1, tab2 = st.tabs(["🔍 농약 검색 및 상세지침", "🧮 희석배수 계산기"])
@@ -55,7 +95,7 @@ tab1, tab2 = st.tabs(["🔍 농약 검색 및 상세지침", "🧮 희석배수 
 # TAB 1: 농약 검색 및 상세 지침
 # ==========================================
 with tab1:
-  # (1) 첫 화면 상단 검색 필터 카드 (3컬럼 배치)
+  # (1) 첫 화면 상단 검색 필터 카드
   with st.container(border=True):
     st.subheader("🔍 농약 검색 조건")
 
@@ -68,48 +108,39 @@ with tab1:
       )
       selected_use = st.selectbox("1. 용도 선택", use_categories)
 
-    # 1차 필터링 (용도 기준)
+    # 1차 필터링 (용도)
     df_step1 = df_raw.copy()
     if selected_use != "전체":
       df_step1 = df_step1[df_step1["용도"] == selected_use]
 
-    # 2. 작물명 선택 (용도 선택에 따라 동적 변경)
+    # 2. 작물 선택 ('작물명 선택'에서 '작물 선택'으로 수정)
     with col_filter2:
       all_crops = sorted([x for x in df_step1["작물명"].unique() if x != "-"])
-      selected_crop = st.selectbox("2. 작물명 선택", ["전체"] + all_crops)
+      selected_crop = st.selectbox("2. 작물 선택", ["전체"] + all_crops)
 
-    # 2차 필터링 (작물명 기준)
+    # 2차 필터링 (작물)
     df_step2 = df_step1.copy()
     if selected_crop != "전체":
       df_step2 = df_step2[df_step2["작물명"] == selected_crop]
 
-    # 3. 적용 병해충 선택 (선택한 작물에 해당하는 병해충만 동적 노출)
+    # 3. 적용 병해충 선택
     with col_filter3:
       all_pests = sorted(
           [x for x in df_step2["적용병해충"].unique() if x != "-"]
       )
       selected_pest = st.selectbox("3. 적용 병해충 선택", ["전체"] + all_pests)
 
-    # 3차 필터링 (적용 병해충 기준)
+    # 3차 필터링 (병해충)
     df_step3 = df_step2.copy()
     if selected_pest != "전체":
       df_step3 = df_step3[df_step3["적용병해충"] == selected_pest]
 
-    # 하단 2컬럼 배치 (키워드 검색 & 작용기작)
-    col_filter4, col_filter5 = st.columns(2)
-
-    with col_filter4:
-      search_keyword = st.text_input(
-          "4. 상표명 / 품목명 / 성분명 키워드",
-          value="",
-          placeholder="검색어 입력 (예: 가가방, 수화제 등)",
-      )
-
-    with col_filter5:
-      mechanism_list = ["전체"] + sorted(
-          [x for x in df_step3["작용기작"].unique() if x != "-"]
-      )
-      selected_mechanism = st.selectbox("5. 작용기작 선택", mechanism_list)
+    # 4. 키워드 검색 (작용기작 필터 제외 반영)
+    search_keyword = st.text_input(
+        "4. 상표명 / 품목명 / 성분명 키워드 검색",
+        value="",
+        placeholder="검색어를 입력하세요 (예: 가가방, 수화제 등)",
+    )
 
   # 최종 필터링 데이터 적용
   df_filtered = df_step3.copy()
@@ -122,19 +153,30 @@ with tab1:
         | df_filtered["일반명"].str.contains(kw, case=False, na=False)
     ]
 
-  if selected_mechanism != "전체":
-    df_filtered = df_filtered[df_filtered["작용기작"] == selected_mechanism]
-
-  st.markdown("---")
-
-  # (2) 검색 결과 요약 지표 (Metrics)
-  m1, m2, m3, m4 = st.columns(4)
-  m1.metric("검색 결과", f"{len(df_filtered):,} 건")
-  m2.metric("대상 작물", f"{df_filtered['작물명'].nunique():,} 개")
-  m3.metric("대상 병해충", f"{df_filtered['적용병해충'].nunique():,} 개")
-  m4.metric("검색 상표 수", f"{df_filtered['상표명'].nunique():,} 개")
-
-  st.markdown("---")
+  # (2) 검색 결과 요약 지표 (모바일 가로 1줄 배치)
+  st.markdown(
+      f"""
+    <div class="metric-container">
+        <div class="metric-box">
+            <div class="metric-label">검색 결과</div>
+            <div class="metric-value">{len(df_filtered):,} 건</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">대상 작물</div>
+            <div class="metric-value">{df_filtered['작물명'].nunique():,} 개</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">대상 병해충</div>
+            <div class="metric-value">{df_filtered['적용병해충'].nunique():,} 개</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">검색 상표수</div>
+            <div class="metric-value">{df_filtered['상표명'].nunique():,} 개</div>
+        </div>
+    </div>
+    """,
+      unsafe_allow_html=True,
+  )
 
   # (3) 검색 결과 목록
   st.subheader("📋 검색 결과 목록")
@@ -157,8 +199,8 @@ with tab1:
   if len(df_filtered) > MAX_DISPLAY:
     st.info(
         f"💡 검색 결과가 총 **{len(df_filtered):,}건**으로 많아 상위"
-        f" **{MAX_DISPLAY}건**만 표에 표시합니다. 상단 검색 조건에서 작물이나"
-        " 병해충을 선택하여 결과를絞り込んでください."
+        f" **{MAX_DISPLAY}건**만 표에 표시합니다. 상단에서 작물이나 병해충을"
+        " 선택하시면 상세한 조회가 가능합니다."
     )
     display_df = df_filtered[default_columns].head(MAX_DISPLAY)
   else:
@@ -242,74 +284,75 @@ with tab1:
     st.info("검색 조건에 일치하는 농약이 없습니다.")
 
 # ==========================================
-# TAB 2: 희석배수 및 사용량 계산기
+# TAB 2: 농약 희석배수 계산기
 # ==========================================
 with tab2:
-  st.subheader("🧮 농약 희석배수 계산기")
+  st.subheader("🧮 농약 희석배수 자동 계산기")
   st.caption(
-      "살포할 물의 양과 희석배수를 입력하여 필요한 약제(농약)의 정량을"
-      " 계산합니다."
+      "살포할 물의 양과 희석배수를 입력하면 필요한 농약 용량이 자동으로"
+      " 계산됩니다."
   )
 
-  calc_col1, calc_col2 = st.columns(2)
+  with st.container(border=True):
+    calc_col1, calc_col2 = st.columns(2)
 
-  with calc_col1:
-    unit_type = st.radio(
-        "물의 양 입력 단위 선택",
-        ["리터 (L)", "말 (1말 = 20L)"],
-        horizontal=True,
-    )
-
-    if unit_type == "리터 (L)":
-      water_input = st.number_input(
-          "살포할 물의 양 (L)", min_value=0.1, value=20.0, step=1.0
+    with calc_col1:
+      unit_type = st.radio(
+          "물의 양 입력 단위 선택",
+          ["리터 (L)", "말 (1말 = 20L)"],
+          horizontal=True,
       )
-      water_ml = water_input * 1000.0
-    else:
-      mal_input = st.number_input(
-          "살포할 물의 양 (말)", min_value=0.1, value=1.0, step=0.5
+
+      if unit_type == "리터 (L)":
+        water_input = st.number_input(
+            "살포할 물의 양 (L)", min_value=0.1, value=20.0, step=1.0
+        )
+        water_ml = water_input * 1000.0
+      else:
+        mal_input = st.number_input(
+            "살포할 물의 양 (말)", min_value=0.1, value=1.0, step=0.5
+        )
+        water_ml = mal_input * 20.0 * 1000.0
+
+    with calc_col2:
+      dilution_ratio = st.number_input(
+          "희석배수 (예: 500, 1000)",
+          min_value=1,
+          value=1000,
+          step=100,
+          help="농약 라벨에 기재된 희석배수 숫자를 입력하세요.",
       )
-      water_ml = mal_input * 20.0 * 1000.0
 
-  with calc_col2:
-    dilution_ratio = st.number_input(
-        "희석 배수 (예: 500배, 1000배)",
-        min_value=1,
-        value=1000,
-        step=100,
-        help="농약 포장지에 기재된 희석배수를 입력하세요.",
-    )
+      cap_size = st.number_input(
+          "농약 뚜껑(캡) 용량 (mL) [선택]",
+          min_value=1.0,
+          value=20.0,
+          step=5.0,
+          help="뚜껑 개수로 계산할 때 사용합니다 (기본 20mL).",
+      )
 
-    cap_size = st.number_input(
-        "농약 뚜껑(캡) 용량 (mL) [선택사항]",
-        min_value=1.0,
-        value=20.0,
-        step=5.0,
-        help="뚜껑 기준 정량을 측정할 때 사용합니다. (보통 20mL)",
-    )
+    # 자동 계산 결과 산출
+    if dilution_ratio > 0:
+      required_pesticide_ml = water_ml / dilution_ratio
+      cap_count = required_pesticide_ml / cap_size
 
-  if dilution_ratio > 0:
-    required_pesticide_ml = water_ml / dilution_ratio
-    cap_count = required_pesticide_ml / cap_size
+      st.markdown("---")
+      st.success("### 💡 자동 계산 결과")
 
-    st.success("### 💡 계산 결과")
+      res1, res2, res3 = st.columns(3)
+      res1.metric("필요한 물의 총량", f"{water_ml/1000:,.1f} L")
+      res2.metric(
+          "필요 농약 용량 (자동계산)",
+          f"{required_pesticide_ml:,.1f} mL (g)",
+      )
+      res3.metric(
+          "뚜껑 기준 측정량",
+          f"약 {cap_count:,.1f} 뚜껑",
+          f"1뚜껑={cap_size}mL 기준",
+      )
 
-    res_c1, res_c2, res_c3 = st.columns(3)
-    res_c1.metric(
-        "필요한 물의 총량",
-        f"{water_ml/1000:,.1f} L",
-        f"{(water_ml/1000)/20:,.1f} 말",
-    )
-    res_c2.metric("필요 약제(농약) 용량", f"{required_pesticide_ml:,.1f} mL (또는 g)")
-    res_c3.metric(
-        "뚜껑(캡) 기준 약제량",
-        f"약 {cap_count:,.1f} 뚜껑",
-        f"1뚜껑당 {cap_size}mL 기준",
-    )
-
-    st.markdown("""
-        > 📌 **참고 및 주의사항**
-        > * 액상 수화제, 유제 등 액체 농약의 경우 **1mL ≒ 1g**으로 계산됩니다.
-        > * 수화제(가루) 농약의 경우 저울을 이용해 g 단위를 측정하는 것이 가장 정확합니다.
-        > * 약제를 먼저 물 소량에 완전히 녹인 후 잔여 물을 채워 혼합하시면 균일하게 희석됩니다.
-        """)
+      st.markdown("""
+            > 📌 **사용 안내**
+            > * 액체 농약(액상수화제, 유제 등)은 **1mL ≒ 1g**으로 간주하여 계산됩니다.
+            > * 약제를 먼저 소량의 물에 완전히 희석한 후 전체 물통에 섞으면 균일하게 혼합됩니다.
+            """)
