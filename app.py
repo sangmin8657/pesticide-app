@@ -67,7 +67,7 @@ st.markdown(
 )
 
 # GitHub Release CSV Direct Download URL
-DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
+DATA_URL = "https://github.com/YOUR_GITHUB_ID/YOUR_REPO_NAME/releases/download/v1.0.0/pesticide_data.csv"
 
 
 # 2. 데이터 로딩 함수 (User-Agent 헤더 및 캐싱)
@@ -106,8 +106,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 3. 메인 탭 구성 ('농약 검색', '희석배수 계산기')
-tab1, tab2 = st.tabs(["🔍 농약 검색", "🧮 희석배수 계산기"])
+# 3. 메인 탭 구성 (Streamlit 숏코드 적용으로 기기 독립적 아이콘 출력 보장)
+tab1, tab2 = st.tabs([":mag: 농약 검색", ":test_tube: 희석배수 계산기"])
 
 # ==========================================
 # TAB 1: 농약 검색
@@ -305,7 +305,7 @@ with tab1:
 # TAB 2: 희석배수 계산기
 # ==========================================
 with tab2:
-  st.subheader("🧮 농약 희석배수 자동 계산기")
+  st.subheader("🧪 농약 희석배수 자동 계산기")
   st.caption(
       "살포할 물의 양과 희석배수를 입력하면 필요한 농약 용량이 자동으로"
       " 계산됩니다."
