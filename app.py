@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 모바일 대응 CSS (타이틀 한 줄 표시 + 요약지표 가로 1줄 유지)
+# 모바일 대응 CSS & 하단 출처(Footer) 스타일링
 st.markdown(
     """
     <style>
@@ -61,6 +61,37 @@ st.markdown(
         color: #1b4332;
         white-space: nowrap;
     }
+
+    /* 3. 푸터(Footer) 데이터 출처 영역 스타일 */
+    .footer-container {
+        margin-top: 50px;
+        padding: 20px 15px;
+        background-color: #f8f9fa;
+        border-top: 2px solid #2d6a4f;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #495057;
+    }
+    .footer-logos {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+    .footer-logo-img {
+        height: 32px;
+        object-fit: contain;
+    }
+    .agency-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        background-color: #e9ecef;
+        color: #212529;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 11px;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -100,20 +131,20 @@ if df_raw.empty:
   )
   st.stop()
 
-# 메인 타이틀 (모바일 가로 한 줄 적용)
+# 메인 타이틀 (모바일 가로 한 줄 대응)
 st.markdown(
     '<h1 class="main-title">⛳ 골프장 농약 안전사용 도우미</h1>',
     unsafe_allow_html=True,
 )
 
-# 3. 메인 탭 구성 (Streamlit 숏코드 적용으로 기기 독립적 아이콘 출력 보장)
-tab1, tab2 = st.tabs(["🔍 농약 검색 조건", "🧮 희석배수 계산기"])
+# 3. 메인 탭 구성
+tab1, tab2 = st.tabs(["🔍 농약 검색", "🧪 희석배수 계산기"])
 
 # ==========================================
 # TAB 1: 농약 검색
 # ==========================================
 with tab1:
-  # (1) 첫 화면 상단 검색 필터 카드
+  # (1) 상단 검색 필터
   with st.container(border=True):
     st.subheader("🔍 농약 검색 조건")
 
@@ -305,7 +336,7 @@ with tab1:
 # TAB 2: 희석배수 계산기
 # ==========================================
 with tab2:
-  st.subheader("🧮 희석배수 계산기")
+  st.subheader("🧪 농약 희석배수 자동 계산기")
   st.caption(
       "살포할 물의 양과 희석배수를 입력하면 필요한 농약 용량이 자동으로"
       " 계산됩니다."
@@ -374,3 +405,27 @@ with tab2:
             > * 액체 농약(액상수화제, 유제 등)은 **1mL ≒ 1g**으로 간주하여 계산됩니다.
             > * 약제를 먼저 소량의 물에 완전히 희석한 후 전체 물통에 섞으면 균일하게 혼합됩니다.
             """)
+
+
+# ==========================================
+# 4. 화면 최하단 출처 및 기관 표시 푸터 (Footer)
+# ==========================================
+st.markdown(
+    """
+    <div class="footer-container">
+        <div class="footer-logos">
+            <!-- 2026년 대한민국 정부상징 마크 -->
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Emblem_of_the_Government_of_the_Republic_of_Korea_%28Korean%29.svg/500px-Emblem_of_the_Government_of_the_Republic_of_Korea_%28Korean%29.svg.png" class="footer-logo-img" alt="대한민국 정부상징">
+            <span class="agency-badge">기후에너지환경부</span>
+            <span class="agency-badge">국립환경과학원</span>
+            <span class="agency-badge">농약안전정보센터</span>
+        </div>
+        <div>
+            <strong>📢 데이터 출처 및 안내</strong><br>
+            본 어플리케이션은 <strong>기후에너지환경부</strong> 및 <strong>국립환경과학원</strong>, <strong>농약안전정보센터</strong>에서 제공하는 공공 농약 안전사용 및 표준 등록 데이터를 기반으로 제작되었습니다.<br>
+            <span style="color: #868e96;">※ 본 앱의 검색 결과 및 계산 결과는 토양·지하수 환경 보호 및 골프장 농약 안전사용 관리를 돕기 위한 참고 정보이며, 실제 사용 시 제품의 용기 표기 지침을 반드시 확인하시기 바랍니다.</span>
+        </div>
+    </div>
+""",
+    unsafe_allow_html=True,
+)
