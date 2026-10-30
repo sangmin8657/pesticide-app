@@ -44,10 +44,11 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* 1. 메인 헤더 & 타이틀 반응형 스타일 */
+    /* 1. 메인 헤더 & 타이틀 반응형 스타일 (양끝 정렬) */
     .header-container {
         display: flex;
         align-items: center;
+        justify-content: space-between; /* 타이틀 좌측, 로고 우측 정렬 */
         gap: 15px;
         margin-bottom: 1rem;
     }
@@ -180,12 +181,12 @@ if df_raw.empty:
     )
     st.stop()
 
-# 메인 헤더 영역 (국립환경과학원 로고 + 타이틀)
+# 메인 헤더 영역 (타이틀 좌측, 국립환경과학원 로고 우측)
 if nier_logo_b64:
     header_html = f"""
     <div class="header-container">
-        <img src="data:image/png;base64,{nier_logo_b64}" class="header-logo" alt="국립환경과학원 로고">
         <h1 class="main-title">⛳ 골프장 농약 안전사용 도우미</h1>
+        <img src="data:image/png;base64,{nier_logo_b64}" class="header-logo" alt="국립환경과학원 로고">
     </div>
     """
 else:
