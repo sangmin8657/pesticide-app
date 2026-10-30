@@ -6,23 +6,30 @@ import requests
 import streamlit as st
 
 # ==========================================
-# 0. 경로 설정 및 로고 파일 로딩 (assets/nier_logo.png)
+# 0. GitHub Release URL 설정 및 로고 파일 로딩
 # ==========================================
-NIER_LOGO_PATH = os.path.join("assets", "nier_logo.png")
+DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
+NIER_LOGO_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/nier_logo.png"
 
 
-# 리소스(이미지 파일 읽기 및 Base64 변환) 캐싱 처리
 @st.cache_resource
-def get_image_base64(image_path: str) -> str:
-    """이미지 파일을 HTML에 직접 삽입하기 위해 Base64 문자열로 변환하는 함수"""
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    return ""
+def get_image_base64_from_url(url: str) -> str:
+    """웹 URL의 이미지 파일을 읽어 Base64 문자열로 변환하는 함수"""
+    try:
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            )
+        }
+        res = requests.get(url, headers=headers, timeout=10)
+        res.raise_for_status()
+        return base64.b64encode(res.content).decode()
+    except Exception:
+        return ""
 
 
 # 로고 이미지 Base64 인코딩 데이터 생성
-nier_logo_b64 = get_image_base64(NIER_LOGO_PATH)
+nier_logo_b64 = get_image_base64_from_url(NIER_LOGO_URL)
 
 
 # 1. 페이지 레이아웃 및 타이틀 설정
@@ -135,9 +142,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-# GitHub Release CSV Direct Download URL
-DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
 
 
 # 2. 데이터 로딩 및 필터 옵션 추출 캐싱 함수
