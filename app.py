@@ -44,17 +44,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* 1. 메인 헤더 & 타이틀 반응형 스타일 (양끝 정렬) */
+    /* 1. 메인 헤더 & 타이틀 반응형 스타일 (모바일 화면 이탈 방지 최적화) */
     .header-container {
         display: flex;
         align-items: center;
         justify-content: space-between; /* 타이틀 좌측, 로고 우측 정렬 */
-        gap: 15px;
+        gap: 10px;
         margin-bottom: 1rem;
+        width: 100%;
     }
     .header-logo {
         height: 48px;
+        max-width: 35%;
         object-fit: contain;
+        flex-shrink: 0; /* 로고 형태 및 비율 보존 */
     }
     .main-title {
         font-size: 1.8rem;
@@ -63,16 +66,19 @@ st.markdown(
         white-space: nowrap;
         margin: 0;
     }
+
+    /* 📱 모바일 전용 반응형 헤더 스타일 (600px 이하) */
     @media (max-width: 600px) {
         .header-container {
-            gap: 8px;
+            gap: 4px;
         }
         .header-logo {
-            height: 36px;
+            height: 24px !important; /* 모바일 환경 로고 사이즈 축소 */
+            max-width: 30% !important;
         }
         .main-title {
-            font-size: 1.15rem !important;
-            letter-spacing: -0.8px;
+            font-size: 0.95rem !important; /* 모바일 환경 타이틀 크기 및 자간 최적화 */
+            letter-spacing: -0.8px !important;
         }
     }
     
