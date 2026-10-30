@@ -494,7 +494,7 @@ st.markdown(
         </div>
         <div>
             <strong>📢 데이터 출처 및 안내</strong><br>
-            본 어플리케이션은 <strong>국립환경과학원</strong>에서 구축하고 <strong>농촌진흥청</strong>에서 운영하는 <strong>농약안전정보센터</strong>에서 제공하는 공공 농약 안전사용 및 표준 등록 데이터를 기반으로 제작되었습니다.<br>
+            본 서비스는 <strong>국립환경과학원</strong>에서 구축하고 <strong>농촌진흥청</strong>에서 운영하는 <strong>농약안전정보센터</strong>의 제공데이터를 활용하였습니다.<br>
             <span style="color: #868e96;">※ 본 앱의 검색 결과 및 계산 결과는 토양·지하수 환경 보호 및 골프장 농약 안전사용 관리를 돕기 위한 참고 정보이며, 실제 사용 시 제품의 용기 표기 지침을 반드시 확인하시기 바랍니다.</span>
         </div>
     </div>
