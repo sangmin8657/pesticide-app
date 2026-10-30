@@ -238,7 +238,7 @@ with tab1:
         search_keyword = st.text_input(
             "4. 상표명 / 품목명 / 성분명 키워드 검색",
             value="",
-            placeholder="검색어를 입력하세요 (예: 가가방, 수화제 등)",
+            placeholder="검색어를 입력하세요 (예: 가가방, 가스가마이신, 수화제 등)",
         )
 
     # 최종 필터링 데이터 적용
