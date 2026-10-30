@@ -9,7 +9,10 @@ import streamlit as st
 # 0. GitHub Release URL 설정 및 로고 파일 로딩
 # ==========================================
 DATA_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/pesticide_data.csv"
+
+# 국립환경과학원 및 농촌진흥청 로고 GitHub Release URL
 NIER_LOGO_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/nier_logo.png"
+RDA_LOGO_URL = "https://github.com/sangmin8657/pesticide-app/releases/download/pesticide/rda_logo.png"  # ⚠️ 실제 업로드한 파일명으로 수정하세요.
 
 
 @st.cache_resource
@@ -28,8 +31,9 @@ def get_image_base64_from_url(url: str) -> str:
         return ""
 
 
-# 로고 이미지 Base64 인코딩 데이터 생성
+# 각 기관 로고 이미지 Base64 인코딩 데이터 생성
 nier_logo_b64 = get_image_base64_from_url(NIER_LOGO_URL)
+rda_logo_b64 = get_image_base64_from_url(RDA_LOGO_URL)
 
 
 # 1. 페이지 레이아웃 및 타이틀 설정
@@ -131,7 +135,7 @@ st.markdown(
         margin-bottom: 12px;
         flex-wrap: wrap;
     }
-    .footer-nier-logo {
+    .footer-agency-logo {
         height: 32px;
         object-fit: contain;
         vertical-align: middle;
@@ -488,11 +492,19 @@ with tab2:
 # ==========================================
 # 4. 화면 최하단 출처 및 기관 표시 푸터 (Footer)
 # ==========================================
+# 국립환경과학원 및 농촌진흥청 로고 태그 생성
 nier_footer_logo_html = (
-    f'<img src="data:image/png;base64,{nier_logo_b64}" class="footer-nier-logo"'
+    f'<img src="data:image/png;base64,{nier_logo_b64}" class="footer-agency-logo"'
     ' alt="국립환경과학원 로고">'
     if nier_logo_b64
     else '<span class="agency-badge">국립환경과학원</span>'
+)
+
+rda_footer_logo_html = (
+    f'<img src="data:image/png;base64,{rda_logo_b64}" class="footer-agency-logo"'
+    ' alt="농촌진흥청 로고">'
+    if rda_logo_b64
+    else '<span class="agency-badge">농촌진흥청</span>'
 )
 
 st.markdown(
@@ -500,7 +512,7 @@ st.markdown(
     <div class="footer-container">
         <div class="footer-logos">
             {nier_footer_logo_html}
-            <span class="agency-badge">농촌진흥청</span>
+            {rda_footer_logo_html}
             <span class="agency-badge">농약안전정보센터</span>
         </div>
         <div>
